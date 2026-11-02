@@ -1,0 +1,24 @@
+name: jkanime_plugin
+description: Plugin de JKAnime para RoloStream.
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  dio: ^5.7.0
+  cookie_jar: ^4.0.8
+  dio_cookie_manager: ^3.1.1
+  html: ^0.15.4
+
+  # Contrato común. Mientras se desarrolla en local se puede usar:
+  #   rolostream_core:
+  #     path: ../rolostream_core
+  rolostream_core:
+    git:
+      url: https://github.com/PelisEcno/rolostream_core
+      ref: main
+
+dev_dependencies:
+  test: ^1.25.0
