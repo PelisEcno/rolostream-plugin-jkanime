@@ -246,13 +246,13 @@ class JKAnimeSource implements core.SourcePlugin {
         url: url,
       ));
     }
-    // El reproductor abre el primero: los enlaces de descarga (Mediafire, Mega) no se
+    // El reproductor abre el primero: los enlaces de descarga (Mediafire, Mega, 1Fichier) no se
     // pueden reproducir, así que van al final. `sort` de Dart no es estable: se separa.
     bool isDownload(core.VideoServer s) => _downloadHosts.any(s.nombre.toLowerCase().startsWith);
     return [...out.where((s) => !isDownload(s)), ...out.where(isDownload)];
   }
 
-  static const _downloadHosts = ['mediafire', 'mega'];
+  static const _downloadHosts = ['mediafire', 'mega', '1fichier'];
 
   // ----------------------------------------------------------
   // Directorio (JSON incrustado en la página)
@@ -282,10 +282,29 @@ class JKAnimeSource implements core.SourcePlugin {
               titulo: '${a['title']}', url: '${a['url']}', imagen: '${a['image']}'),
       ];
 
-  /// TODO: la lista de episodios recientes de la portada se carga por AJAX desde un
-  /// JS externo (player.js / home); falta localizar ese endpoint.
+  /// Últimos episodios: la portada los trae ya renderizados en la pestaña `#animes`
+  /// (enlace al episodio, miniatura, "Ep 5" y "Ayer"). La lista "recientes" que carga
+  /// main.js por AJAX es el historial del usuario y requiere sesión, así que no se usa.
   @override
-  Future<List<core.RecentEpisode>> getLatestEpisodes() async => [];
+  Future<List<core.RecentEpisode>> getLatestEpisodes() async {
+    final doc = html_parser.parse(await _getHtml('$_baseUrl/'));
+
+    final seen = <String>{};
+    final out = <core.RecentEpisode>[];
+    for (final card in doc.querySelectorAll('#animes .dir1')) {
+      final href = card.querySelector('a')?.attributes['href'] ?? '';
+      final titulo = card.querySelector('h5')?.text.trim() ?? '';
+      if (titulo.isEmpty || parseEpisodeUrl(href) == null || !seen.add(href)) continue;
+      final img = card.querySelector('img');
+      out.add(core.RecentEpisode(
+        titulo: titulo,
+        url: _abs(href),
+        imagen: img?.attributes['src'] ?? img?.attributes['data-animepic'] ?? '',
+        fecha: card.querySelector('.badge-secondary')?.text.trim() ?? '',
+      ));
+    }
+    return out;
+  }
 
   @override
   Future<List<core.AiringAnime>> getAiringAnimes({int page = 1}) async => [
