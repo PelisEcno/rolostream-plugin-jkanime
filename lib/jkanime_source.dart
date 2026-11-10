@@ -7,13 +7,6 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:rolostream_core/rolostream_core.dart' as core;
 
-/// Fuente JKAnime (jkanime.net) para RoloStream.
-///
-///  * Búsqueda y detalle: HTML.
-///  * Episodios: `POST /ajax/episodes/{id}/{página}` con el token CSRF (16 por página).
-///  * Servidores: arreglo JS `var servers = [...]` en la página del episodio, con la URL
-///    de cada embed en Base64 (`remote`).
-///  * Directorio (emisión y filtros): JSON incrustado en `var animes = {...}`.
 class JKAnimeSource implements core.SourcePlugin {
   JKAnimeSource() {
     _dio = Dio(BaseOptions(
@@ -47,18 +40,12 @@ class JKAnimeSource implements core.SourcePlugin {
   @override
   core.FilterOptions get filterOptions => _filterOptions;
 
-  // ----------------------------------------------------------
-  // URLs
-  // ----------------------------------------------------------
-
-  /// https://jkanime.net/naruto/  →  naruto
   @override
   String slugFromUrl(String url) {
     final segs = Uri.tryParse(url)?.pathSegments.where((s) => s.isNotEmpty).toList() ?? [];
     return segs.isEmpty ? url : segs.first;
   }
 
-  /// https://jkanime.net/naruto/12/  →  (naruto, 12)
   @override
   ({String slug, int numero})? parseEpisodeUrl(String url) {
     final path = Uri.tryParse(url)?.path ?? url;
@@ -81,10 +68,6 @@ class JKAnimeSource implements core.SourcePlugin {
     return '$_baseUrl/${href.replaceFirst(RegExp(r'^/'), '')}';
   }
 
-  // ----------------------------------------------------------
-  // Búsqueda
-  // ----------------------------------------------------------
-
   /// `/buscar?q=...` redirige a `/buscar/{q}` y devuelve el HTML con los resultados.
   @override
   Future<List<core.AnimeResult>> search(String query) async {
@@ -106,10 +89,6 @@ class JKAnimeSource implements core.SourcePlugin {
     }
     return out;
   }
-
-  // ----------------------------------------------------------
-  // Detalle
-  // ----------------------------------------------------------
 
   @override
   Future<core.AnimeDetail> getAnime(String slug) async {
@@ -172,7 +151,6 @@ class JKAnimeSource implements core.SourcePlugin {
         }
         if (byNumber.isNotEmpty) return byNumber.values.toList()..sort((a, b) => a.numero.compareTo(b.numero));
       } catch (_) {
-        // cae al plan B
       }
     }
 
@@ -200,10 +178,6 @@ class JKAnimeSource implements core.SourcePlugin {
     if (json is! Map<String, dynamic>) throw const FormatException('respuesta inesperada');
     return json;
   }
-
-  // ----------------------------------------------------------
-  // Servidores
-  // ----------------------------------------------------------
 
   /// La página del episodio trae `var servers = [{remote:"<base64>", server:"VOE", lang:1, ...}]`.
   @override
@@ -253,10 +227,6 @@ class JKAnimeSource implements core.SourcePlugin {
   }
 
   static const _downloadHosts = ['mediafire', 'mega', '1fichier'];
-
-  // ----------------------------------------------------------
-  // Directorio (JSON incrustado en la página)
-  // ----------------------------------------------------------
 
   Future<List<Map<String, dynamic>>> _directory(Map<String, String> query, int page) async {
     final html = await _getHtml('$_baseUrl/directorio', query: {
@@ -364,7 +334,6 @@ final _letras = <core.FilterOption>[
   for (final c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')) core.FilterOption(c, c),
 ];
 
-// Valores tal como los usa jkanime.net/directorio (select de géneros, años y letras).
 const _generos = <core.FilterOption>[
   core.FilterOption('accion', 'Acción'),
   core.FilterOption('aventura', 'Aventura'),
